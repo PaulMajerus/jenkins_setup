@@ -1,19 +1,23 @@
-# Image de base officielle R
-FROM r-base:latest
+FROM jenkins/jenkins:latest
 
-# Installation de packages système nécessaires
+# Passer en root pour installer les dépendances
+USER root
+
+# Installer dépendances Linux nécessaires à R + renv
 RUN apt-get update && apt-get install -y \
+    r-base \
     libcurl4-openssl-dev \
     libssl-dev \
     libxml2-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copier ton code dans le conteneur
-COPY . /app
-WORKDIR /app
+# Installer renv et faire le consentement global
+RUN Rscript -e "install.packages('renv', repos='https://cloud.r-project.org')" \
+    && Rscript -e "renv::consent(provided=TRUE)"
 
-# Installer des packages R depuis le CRAN
-RUN Rscript -e "install.packages(c('tidyverse', 'data.table'), repos='https://cloud.r-project.org')"
+# Revenir à l'utilisateur Jenkins
+USER jenkins
 
-# Commande par défaut
-CMD ["Rscript", "main.R"]
+# Exposer le port de Jenkins
+EXPOSE 8080
